@@ -28,7 +28,7 @@
     static long i = 0;
     if (i > 10) {
         [self.timer pause];
-        sleep(5);
+        sleep(2);
         i = 0;
         [self.timer resume];
         return;

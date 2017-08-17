@@ -18,6 +18,8 @@
 @property (nonatomic) id target;
 @property (nonatomic) SEL selector;
 
+@property (nonatomic, getter=isInvalid) BOOL invalid;
+
 @end
 
 @implementation YXTimer
@@ -48,7 +50,12 @@
 }
 
 - (void)resume {
-    [self invalidate];
+    [self pause];
+    
+    if (self.isInvalid) {
+        return;
+    }
+    
     self.source = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
     uint64_t nsec = (uint64_t)(self.seconds * NSEC_PER_SEC);
     dispatch_source_set_timer(self.source, dispatch_time(DISPATCH_TIME_NOW, nsec), nsec, 0);
@@ -56,24 +63,27 @@
     dispatch_source_set_event_handler(self.source, ^{
         [wself fire];
     });
+    
     dispatch_resume(self.source);
 }
 
 - (void)pause {
-    [self invalidate];
-}
-
-- (void)invalidate {
     if (self.source) {
         dispatch_source_cancel(self.source);
         self.source = nil;
     }
 }
 
+- (void)invalidate {
+    self.invalid = true;
+    [self pause];
+}
+
 - (void)fire {
     if (self.block) {
         self.block();
     }
+    
     if ([self.target respondsToSelector:self.selector]) {
         IMP imp = [self.target methodForSelector:self.selector];
         void (*func)(id, SEL, YXTimer *) = (void *)imp;

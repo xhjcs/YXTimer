@@ -26,13 +26,6 @@
 
 - (void)test:(YXTimer *)sender {
     static long i = 0;
-    if (i > 10) {
-        [self.timer pause];
-        sleep(2);
-        i = 0;
-        [self.timer resume];
-        return;
-    }
     NSLog(@"%ld", i++);
 }
 

@@ -8,9 +8,13 @@
 
 #import "YXTimer.h"
 
-@interface YXTimer ()
+typedef NS_ENUM(NSUInteger, YXTimerState) {
+    YXTimerStateActive,
+    YXTimerStateSuspend,
+    YXTimerStateInvalid
+};
 
-@property (nonatomic) NSTimeInterval seconds;
+@interface YXTimer ()
 
 @property (nonatomic, copy) dispatch_block_t block;
 @property (nonatomic) dispatch_source_t source;
@@ -18,31 +22,51 @@
 @property (nonatomic) id target;
 @property (nonatomic) SEL selector;
 
-@property (nonatomic, getter=isInvalid) BOOL invalid;
+@property (nonatomic) YXTimerState state;
 
 @end
 
-@implementation YXTimer
+@implementation YXTimer {
+    id _token;
+}
 
 + (YXTimer *)timerWithTimeInterval:(NSTimeInterval)seconds block:(dispatch_block_t)block {
     YXTimer *timer = [self new];
-    timer.seconds = seconds;
     timer.block = block;
     
-    [timer resume];
+    timer.source = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+    uint64_t nsec = (uint64_t)(seconds * NSEC_PER_SEC);
+    dispatch_source_set_timer(timer.source, dispatch_time(DISPATCH_TIME_NOW, nsec), nsec, 0);
+    dispatch_source_set_event_handler(timer.source, block);
+    
+    dispatch_resume(timer.source);
     
     return timer;
 }
 
 + (YXTimer *)timerWithTimeInterval:(NSTimeInterval)seconds target:(id)aTarget selector:(SEL)aSelector {
     YXTimer *timer = [self new];
-    timer.seconds = seconds;
     timer.target = aTarget;
     timer.selector = aSelector;
     
-    [timer resume];
+    timer.source = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+    uint64_t nsec = (uint64_t)(seconds * NSEC_PER_SEC);
+    dispatch_source_set_timer(timer.source, dispatch_time(DISPATCH_TIME_NOW, nsec), nsec, 0);
+    dispatch_source_set_event_handler(timer.source, ^{
+        [timer fire];
+    });
+    
+    dispatch_resume(timer.source);
     
     return timer;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _token = [NSObject new];
+    }
+    return self;
 }
 
 - (void)dealloc {
@@ -50,33 +74,36 @@
 }
 
 - (void)resume {
-    [self pause];
-    
-    if (self.isInvalid) {
-        return;
+    @synchronized (_token) {
+        if (self.state != YXTimerStateSuspend) {
+            return;
+        }
+        
+        if (self.source) {
+            self.state = YXTimerStateActive;
+            dispatch_resume(self.source);
+        }
     }
-    
-    self.source = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-    uint64_t nsec = (uint64_t)(self.seconds * NSEC_PER_SEC);
-    dispatch_source_set_timer(self.source, dispatch_time(DISPATCH_TIME_NOW, nsec), nsec, 0);
-    __weak typeof(self) wself = self;
-    dispatch_source_set_event_handler(self.source, ^{
-        [wself fire];
-    });
-    
-    dispatch_resume(self.source);
 }
 
 - (void)pause {
-    if (self.source) {
-        dispatch_source_cancel(self.source);
-        self.source = nil;
+    @synchronized (_token) {
+        if (self.state != YXTimerStateActive) {
+            return;
+        }
+        if (self.source) {
+            self.state = YXTimerStateSuspend;
+            dispatch_suspend(self.source);
+        }
     }
 }
 
 - (void)invalidate {
-    self.invalid = true;
-    [self pause];
+    self.state = YXTimerStateInvalid;
+    if (self.source) {
+        dispatch_source_cancel(self.source);
+        self.source = nil;
+    }
 }
 
 - (void)fire {

@@ -8,6 +8,12 @@
 
 #import "YXTimer.h"
 
+typedef NS_ENUM(NSUInteger, YXTimerState) {
+    YXTimerStateActive,
+    YXTimerStateSuspend,
+    YXTimerStateInvalid
+};
+
 @interface YXTimer ()
 
 @property (nonatomic) NSTimeInterval seconds;
@@ -15,8 +21,10 @@
 @property (nonatomic, copy) dispatch_block_t block;
 @property (nonatomic) dispatch_source_t source;
 
-@property (nonatomic) id target;
+@property (nonatomic, weak) id target;
 @property (nonatomic) SEL selector;
+
+@property (nonatomic) YXTimerState state;
 
 @end
 
@@ -53,13 +61,17 @@
     self = [super init];
     if (self) {
         _token = [NSObject new];
+        _state = YXTimerStateSuspend;
     }
     return self;
 }
 
 - (void)resume {
-    [self invalidate];
     @synchronized (_token) {
+        if (_state != YXTimerStateSuspend) {
+            return;
+        }
+        [self pause];
         self.source = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
         uint64_t nsec = (uint64_t)(self.seconds * NSEC_PER_SEC);
         dispatch_source_set_timer(self.source, dispatch_time(DISPATCH_TIME_NOW, nsec), nsec, 0);
@@ -68,26 +80,36 @@
             [wself fire];
         });
         dispatch_resume(self.source);
+        _state = YXTimerStateActive;
     }
 }
 
 - (void)pause {
-    [self invalidate];
-}
-
-- (void)invalidate {
     @synchronized (_token) {
+        if (_state != YXTimerStateActive) {
+            return;
+        }
         if (self.source) {
             dispatch_source_cancel(self.source);
             self.source = nil;
         }
+        _state = YXTimerStateSuspend;
     }
+}
+
+- (void)invalidate {
+    if (_state == YXTimerStateInvalid) {
+        return;
+    }
+    [self pause];
+    _state = YXTimerStateInvalid;
 }
 
 - (void)fire {
     if (self.block) {
         self.block();
     }
+    
     if ([self.target respondsToSelector:self.selector]) {
         IMP imp = [self.target methodForSelector:self.selector];
         void (*func)(id, SEL, YXTimer *) = (void *)imp;

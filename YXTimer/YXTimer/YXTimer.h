@@ -22,7 +22,7 @@
 
 // 使timer失效
 - (void)invalidate;
-// 直接调用timer时间
+// 直接调用timer事件
 - (void)fire;
 
 @end

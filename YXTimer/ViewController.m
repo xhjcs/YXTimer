@@ -30,10 +30,10 @@
             [self.timer pause];
         }
     });
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self.timer invalidate];
-        self.timer = nil;
-    });
+//    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+//        [self.timer invalidate];
+//        self.timer = nil;
+//    });
 }
 
 - (void)test:(YXTimer *)sender {

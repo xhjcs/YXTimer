@@ -28,9 +28,7 @@ typedef NS_ENUM(NSUInteger, YXTimerState) {
 
 @end
 
-@implementation YXTimer {
-    id _token;
-}
+@implementation YXTimer
 
 + (YXTimer *)timerWithTimeInterval:(NSTimeInterval)seconds block:(dispatch_block_t)block {
     YXTimer *timer = [self new];
@@ -60,14 +58,13 @@ typedef NS_ENUM(NSUInteger, YXTimerState) {
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _token = [NSObject new];
         _state = YXTimerStateSuspend;
     }
     return self;
 }
 
 - (void)resume {
-    @synchronized (_token) {
+    @synchronized (self) {
         if (_state != YXTimerStateSuspend) {
             return;
         }
@@ -85,7 +82,7 @@ typedef NS_ENUM(NSUInteger, YXTimerState) {
 }
 
 - (void)pause {
-    @synchronized (_token) {
+    @synchronized (self) {
         if (_state != YXTimerStateActive) {
             return;
         }

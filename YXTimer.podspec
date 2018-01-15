@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name                = 'YXTimer'
-  s.summary             = 'A timer based on GCD implementation provides pause and recovery functions..'
+  s.summary             = 'A timer based on GCD implementation provides pause and recovery functions.'
   s.version             = '1.0.0'
   s.homepage            = 'https://github.com/xinghanjie/YXTimer'
   s.license             = { :type => 'MIT', :file => 'LICENSE' }

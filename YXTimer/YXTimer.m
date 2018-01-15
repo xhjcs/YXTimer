@@ -99,6 +99,8 @@ typedef NS_ENUM(NSUInteger, YXTimerState) {
         return;
     }
     [self pause];
+    _block = nil;
+    _selector = nil;
     _state = YXTimerStateInvalid;
 }
 

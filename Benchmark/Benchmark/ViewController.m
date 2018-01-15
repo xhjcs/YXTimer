@@ -31,9 +31,9 @@
         NSLog(@"block");
     }];
     
-    [self.timer pause];
-    [self.timer resume];
-    [self.timer invalidate];
+    [self.timer1 pause];
+    [self.timer1 resume];
+    [self.timer1 invalidate];
 }
 
 - (void)timer:(YXTimer *)sender {

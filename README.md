@@ -9,7 +9,7 @@ A timer based on GCD implementation provides pause and recovery functions.
 Features
 ==============
 - **Timer**: Based on GCD.
-- **Pause&Resume**: Provide pause and reply methods.
+- **Pause&Resume**: Provide pause and resume methods.
 - **Block**: Support block callback.
 
 Usage

@@ -26,6 +26,7 @@
     
     [self.timer pause];
     [self.timer resume];
+    [self.timer fire];
     
     self.timer1 = [YXTimer timerWithTimeInterval:1.0 block:^{
         NSLog(@"block");
